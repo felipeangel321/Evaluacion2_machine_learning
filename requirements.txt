@@ -2,3 +2,8 @@ ipython>=8.10
 jupyterlab>=3.0
 notebook
 kedro~=1.7.0
+kedro-datasets[pandas-csvdataset,pickle-pickledataset,matplotlib-matplotlibdataset]
+pandas
+scikit-learn
+matplotlib
+seaborn

@@ -1,0 +1,136 @@
+# ─────────────────────────────────────────────
+# Parámetros — pipeline data_cleaning
+# Decisiones documentadas en notebooks/01_eda_analisis_exploratorio.ipynb
+# ─────────────────────────────────────────────
+
+columns_to_drop:
+  - "Unnamed: 0"
+
+cleaning:
+  # Un valor 0 en estas columnas es físicamente imposible (error de medición)
+  invalid_zero_cols:
+    - tempo
+    - time_signature
+    - duration_ms
+  # La misma canción publicada en varios álbumes (single, álbum, recopilatorio)
+  dedupe_by_name_artist: true
+  # popularity = 0 representa ausencia de datos de reproducción, no impopularidad
+  drop_zero_popularity: true
+
+# ─────────────────────────────────────────────
+# Parámetros — pipeline data_transformation
+# ─────────────────────────────────────────────
+
+# Identificadores de texto que se eliminan antes del modelado
+id_columns:
+  - track_id
+  - artists
+  - album_name
+  - track_name
+
+# Nominales sin orden → One-Hot Encoding
+categorical_cols_ohe:
+  - track_genre
+  - key
+  - time_signature
+
+numerical_cols_scale:
+  - danceability
+  - energy
+  - loudness
+  - speechiness
+  - acousticness
+  - instrumentalness
+  - liveness
+  - valence
+  - tempo
+  - duration_min
+  - n_artists
+
+# Tipo de escalador: 'standard' | 'robust' | 'minmax'
+# StandardScaler: necesario para KNN, SVM y modelos lineales
+scaler_type: standard
+
+# Clasificación: is_hit = 1 si popularity >= hit_threshold
+# 50 ≈ percentil 75 del dataset limpio → ~26.6% de canciones "hit"
+hit_threshold: 50
+
+# Features de audio para el modelo no supervisado (sin género ni popularidad)
+clustering_features:
+  - danceability
+  - energy
+  - loudness
+  - speechiness
+  - acousticness
+  - instrumentalness
+  - liveness
+  - valence
+  - tempo
+  - duration_min
+
+# ─────────────────────────────────────────────
+# Parámetros — split train/test
+# ─────────────────────────────────────────────
+
+modeling:
+  random_state: 42
+  test_size: 0.2
+  cv_folds: 5
+  n_jobs: -1
+  permutation_repeats: 5
+
+  # ── Clasificadores ──
+  clf_logistic_regression:
+    C: 1.0
+    penalty: l2
+    solver: lbfgs
+    max_iter: 3000
+    class_weight: balanced
+
+  # max_depth y min_samples_leaf limitan el sobreajuste y el tamaño del modelo
+  clf_random_forest:
+    n_estimators: 200
+    max_depth: 20
+    min_samples_leaf: 5
+    max_features: sqrt
+    class_weight: balanced
+
+  # ── Regresores ──
+  reg_ridge:
+    alpha: 1.0
+
+  reg_random_forest:
+    n_estimators: 200
+    max_depth: 20
+    min_samples_leaf: 5
+    max_features: 0.3
+
+  # ── Optimización de hiperparámetros (HistGradientBoosting) ──
+  tuning:
+    n_iter: 15
+    cv_folds: 3
+    scoring_clf: f1
+    scoring_reg: neg_mean_absolute_error
+    hgb_param_distributions:
+      learning_rate: [0.03, 0.05, 0.1, 0.2]
+      max_iter: [200, 400, 800]
+      max_leaf_nodes: [15, 31, 63, 127]
+      min_samples_leaf: [20, 50, 100]
+      l2_regularization: [0.0, 0.1, 1.0]
+
+# ─────────────────────────────────────────────
+# Parámetros — pipeline unsupervised
+# ─────────────────────────────────────────────
+
+unsupervised:
+  random_state: 42
+  k_min: 2
+  k_max: 10
+  # k final — elegido con silhouette, Davies-Bouldin e interpretabilidad (NB05):
+  # k=6 supera a k=4 y k=5 en ambas métricas y da 6 segmentos con perfil distinto;
+  # k=7 solo separa grabaciones en vivo brasileñas y k=8 un cluster de 36 outliers
+  kmeans_k: 6
+  silhouette_sample: 15000
+  dbscan_pca_components: 5
+  dbscan_eps: [0.5, 0.8, 1.2]
+  dbscan_min_samples: 20

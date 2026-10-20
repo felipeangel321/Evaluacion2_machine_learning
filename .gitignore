@@ -18,6 +18,10 @@ data/**
 # also keep all .gitkeep files
 !.gitkeep
 
+# dataset original: se versiona para que el proyecto sea reproducible (20 MB);
+# el resto de las capas se regenera con `kedro run`
+!data/01_raw/Spotify_Tracks_Dataset.csv
+
 # ignore kedro-viz metadata
 .viz
 

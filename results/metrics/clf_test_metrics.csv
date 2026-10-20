@@ -1,0 +1,5 @@
+Modelo,Accuracy,Precision,Recall,F1,ROC_AUC
+Baseline,0.7344,0.0,0.0,0.0,0.5
+LogisticRegression,0.7637,0.5364,0.8126,0.6462,0.8611
+RandomForest,0.7214,0.4856,0.8323,0.6134,0.8458
+GradientBoosting,0.7964,0.5837,0.8131,0.6796,0.8844

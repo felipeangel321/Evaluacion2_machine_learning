@@ -2,3 +2,277 @@
 #
 # Documentation for this file format can be found in "The Data Catalog"
 # Link: https://docs.kedro.org/en/stable/catalog-data/introduction/#data-catalog
+
+# ─────────────────────────────────────────────
+# CAPA 01_raw — archivo original sin tocar
+# ─────────────────────────────────────────────
+
+spotify_raw:
+  type: pandas.CSVDataset
+  filepath: data/01_raw/Spotify_Tracks_Dataset.csv
+  load_args:
+    sep: ","
+    encoding: utf-8
+
+# ─────────────────────────────────────────────
+# CAPA 02_intermediate — datos limpios
+# ─────────────────────────────────────────────
+
+spotify_clean:
+  type: pandas.CSVDataset
+  filepath: data/02_intermediate/spotify_clean.csv
+  load_args:
+    encoding: utf-8
+  # Windows guarda en cp1252 por defecto y hay títulos con caracteres asiáticos
+  fs_args:
+    open_args_save:
+      mode: w
+      encoding: utf-8
+
+# ─────────────────────────────────────────────
+# CAPA 04_feature — features + encoding
+# ─────────────────────────────────────────────
+
+spotify_features:
+  type: pandas.CSVDataset
+  filepath: data/04_feature/spotify_features.csv
+  load_args:
+    encoding: utf-8
+  # Windows guarda en cp1252 por defecto y hay títulos con caracteres asiáticos
+  fs_args:
+    open_args_save:
+      mode: w
+      encoding: utf-8
+
+spotify_encoded:
+  type: pandas.CSVDataset
+  filepath: data/04_feature/spotify_encoded.csv
+
+# ─────────────────────────────────────────────
+# CAPA 05_model_input — dataset final con targets
+# ─────────────────────────────────────────────
+
+spotify_model_input:
+  type: pandas.CSVDataset
+  filepath: data/05_model_input/spotify_model_input.csv
+
+# ─────────────────────────────────────────────
+# CAPA 05_model_input — splits train/test (supervisado)
+# X escalado (fit en train) | y_clf = is_hit | y_reg = popularity
+# ─────────────────────────────────────────────
+
+X_train:
+  type: pandas.CSVDataset
+  filepath: data/05_model_input/X_train.csv
+
+X_test:
+  type: pandas.CSVDataset
+  filepath: data/05_model_input/X_test.csv
+
+y_train_clf:
+  type: pandas.CSVDataset
+  filepath: data/05_model_input/y_train_clf.csv
+
+y_test_clf:
+  type: pandas.CSVDataset
+  filepath: data/05_model_input/y_test_clf.csv
+
+y_train_reg:
+  type: pandas.CSVDataset
+  filepath: data/05_model_input/y_train_reg.csv
+
+y_test_reg:
+  type: pandas.CSVDataset
+  filepath: data/05_model_input/y_test_reg.csv
+
+# ─────────────────────────────────────────────
+# CAPA 05_model_input — input no supervisado (clustering)
+# ─────────────────────────────────────────────
+
+spotify_clustering_input:
+  type: pandas.CSVDataset
+  filepath: data/05_model_input/spotify_clustering_input.csv
+
+# ─────────────────────────────────────────────
+# CAPA 06_models — escalador ajustado en train
+# ─────────────────────────────────────────────
+
+scaler:
+  type: pickle.PickleDataset
+  filepath: data/06_models/scaler.pkl
+
+# ─────────────────────────────────────────────
+# MODELOS — pipeline modeling + hyperparameter_tuning
+# ─────────────────────────────────────────────
+
+baseline_clf:
+  type: pickle.PickleDataset
+  filepath: models/trained_models/baseline_clf.joblib
+  backend: joblib
+
+logistic_regression_clf:
+  type: pickle.PickleDataset
+  filepath: models/trained_models/logistic_regression_clf.joblib
+  backend: joblib
+
+random_forest_clf:
+  type: pickle.PickleDataset
+  filepath: models/trained_models/random_forest_clf.joblib
+  backend: joblib
+
+gradient_boosting_clf:
+  type: pickle.PickleDataset
+  filepath: models/trained_models/gradient_boosting_clf.joblib
+  backend: joblib
+
+baseline_reg:
+  type: pickle.PickleDataset
+  filepath: models/trained_models/baseline_reg.joblib
+  backend: joblib
+
+ridge_reg:
+  type: pickle.PickleDataset
+  filepath: models/trained_models/ridge_reg.joblib
+  backend: joblib
+
+random_forest_reg:
+  type: pickle.PickleDataset
+  filepath: models/trained_models/random_forest_reg.joblib
+  backend: joblib
+
+gradient_boosting_reg:
+  type: pickle.PickleDataset
+  filepath: models/trained_models/gradient_boosting_reg.joblib
+  backend: joblib
+
+kmeans_model:
+  type: pickle.PickleDataset
+  filepath: models/trained_models/kmeans_model.joblib
+  backend: joblib
+
+# ─────────────────────────────────────────────
+# RESULTADOS — métricas (results/metrics)
+# ─────────────────────────────────────────────
+
+hyperparameter_results_clf:
+  type: pandas.CSVDataset
+  filepath: results/metrics/hyperparameter_results_clf.csv
+
+hyperparameter_results_reg:
+  type: pandas.CSVDataset
+  filepath: results/metrics/hyperparameter_results_reg.csv
+
+clf_test_metrics:
+  type: pandas.CSVDataset
+  filepath: results/metrics/clf_test_metrics.csv
+
+cv_clf_results:
+  type: pandas.CSVDataset
+  filepath: results/metrics/cv_clf_results.csv
+
+reg_test_metrics:
+  type: pandas.CSVDataset
+  filepath: results/metrics/reg_test_metrics.csv
+
+cv_reg_results:
+  type: pandas.CSVDataset
+  filepath: results/metrics/cv_reg_results.csv
+
+feature_importance:
+  type: pandas.CSVDataset
+  filepath: results/metrics/feature_importance.csv
+
+logistic_coefficients:
+  type: pandas.CSVDataset
+  filepath: results/metrics/logistic_coefficients.csv
+
+kmeans_selection_results:
+  type: pandas.CSVDataset
+  filepath: results/metrics/kmeans_selection_results.csv
+
+pca_variance_results:
+  type: pandas.CSVDataset
+  filepath: results/metrics/pca_variance_results.csv
+
+pca_loadings:
+  type: pandas.CSVDataset
+  filepath: results/metrics/pca_loadings.csv
+
+cluster_profiles:
+  type: pandas.CSVDataset
+  filepath: results/metrics/cluster_profiles.csv
+
+dbscan_results:
+  type: pandas.CSVDataset
+  filepath: results/metrics/dbscan_results.csv
+
+cluster_labels:
+  type: pandas.CSVDataset
+  filepath: data/07_model_output/cluster_labels.csv
+
+# ─────────────────────────────────────────────
+# RESULTADOS — gráficos (results/plots)
+# ─────────────────────────────────────────────
+
+plot_clf_confusion_matrices:
+  type: matplotlib.MatplotlibDataset
+  filepath: results/plots/03_clf_confusion_matrices.png
+  save_args:
+    dpi: 100
+    bbox_inches: tight
+
+plot_clf_roc_curves:
+  type: matplotlib.MatplotlibDataset
+  filepath: results/plots/03_clf_roc_curves.png
+  save_args:
+    dpi: 100
+    bbox_inches: tight
+
+plot_logistic_coefficients:
+  type: matplotlib.MatplotlibDataset
+  filepath: results/plots/03_clf_logistic_coefficients.png
+  save_args:
+    dpi: 100
+    bbox_inches: tight
+
+plot_reg_real_vs_pred:
+  type: matplotlib.MatplotlibDataset
+  filepath: results/plots/04_reg_real_vs_pred.png
+  save_args:
+    dpi: 100
+    bbox_inches: tight
+
+plot_metrics_comparison:
+  type: matplotlib.MatplotlibDataset
+  filepath: results/plots/04_metrics_comparison.png
+  save_args:
+    dpi: 100
+    bbox_inches: tight
+
+plot_feature_importance:
+  type: matplotlib.MatplotlibDataset
+  filepath: results/plots/04_feature_importance.png
+  save_args:
+    dpi: 100
+    bbox_inches: tight
+
+plot_kmeans_selection:
+  type: matplotlib.MatplotlibDataset
+  filepath: results/plots/05_kmeans_selection.png
+  save_args:
+    dpi: 100
+    bbox_inches: tight
+
+plot_pca_clusters:
+  type: matplotlib.MatplotlibDataset
+  filepath: results/plots/05_pca_clusters.png
+  save_args:
+    dpi: 100
+    bbox_inches: tight
+
+plot_cluster_profiles:
+  type: matplotlib.MatplotlibDataset
+  filepath: results/plots/05_cluster_profiles.png
+  save_args:
+    dpi: 100
+    bbox_inches: tight

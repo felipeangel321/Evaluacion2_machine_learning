@@ -1,0 +1,11 @@
+feature,PC1,PC2
+danceability,0.223,0.494
+energy,0.516,-0.251
+loudness,0.523,-0.066
+speechiness,0.091,0.145
+acousticness,-0.438,0.325
+instrumentalness,-0.283,-0.332
+liveness,0.097,-0.088
+valence,0.285,0.503
+tempo,0.198,-0.234
+duration_min,-0.0,-0.369

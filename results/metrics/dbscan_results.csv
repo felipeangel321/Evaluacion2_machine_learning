@@ -1,0 +1,5 @@
+modelo,eps,n_clusters,pct_ruido,pct_cluster_mayor,silhouette
+DBSCAN,0.5,4,0.5511,0.4383,0.037
+DBSCAN,0.8,1,0.1238,0.8762,
+DBSCAN,1.2,2,0.0225,0.9699,0.5935
+KMeans,,6,0.0,0.3173,0.2286
