@@ -54,10 +54,11 @@ def deduplicate_tracks(df: pd.DataFrame, dedupe_by_name_artist: bool) -> pd.Data
 
 def filter_zero_popularity(df: pd.DataFrame, drop_zero_popularity: bool) -> pd.DataFrame:
     # El 14% de las canciones tiene popularity = 0, un pico que rompe la
-    # distribución (sin ellos es aproximadamente normal). Spotify asigna 0 a
-    # canciones sin reproducciones recientes o a versiones duplicadas de una
-    # canción popular, por lo que no representan "impopularidad" real sino
-    # ausencia de datos. Mantenerlos sesgaría el target de regresión.
+    # distribución (sin ellos es aproximadamente normal). El EDA (NB01, 8.1)
+    # mostró que muchos son éxitos tomados de recopilatorios o playlists:
+    # Spotify calcula la popularidad por versión y esas copias no acumulan
+    # reproducciones propias. Es un artefacto de recopilación, no
+    # impopularidad real, y mantenerlos sesgaría el target de regresión.
     if not drop_zero_popularity:
         return df
     n_before = len(df)

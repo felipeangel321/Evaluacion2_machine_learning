@@ -14,7 +14,7 @@ cleaning:
     - duration_ms
   # La misma canción publicada en varios álbumes (single, álbum, recopilatorio)
   dedupe_by_name_artist: true
-  # popularity = 0 representa ausencia de datos de reproducción, no impopularidad
+  # popularity = 0 es un artefacto de recopilación (copias en recopilatorios), no impopularidad (NB01, 8.1)
   drop_zero_popularity: true
 
 # ─────────────────────────────────────────────

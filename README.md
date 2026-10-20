@@ -129,6 +129,7 @@ Detalle completo en `notebooks/01_eda_analisis_exploratorio.ipynb`.
 - **24.259 `track_id` repetidos**: la misma canción aparece una vez por cada género en que fue listada (hasta 9 veces), con audio idéntico.
 - Valores imposibles: 157 canciones con `tempo = 0` y 163 con `time_signature = 0`.
 - **14% de canciones con `popularity = 0`**: un pico que rompe la distribución (sin ellos, la popularidad es aproximadamente normal, centrada en ~40).
+  No son canciones impopulares: muchas son éxitos mundiales cuya copia en un recopilatorio o playlist no acumula reproducciones (ver hallazgo sobre géneros latinos).
 
 **Hallazgos principales:**
 
@@ -137,6 +138,10 @@ Detalle completo en `notebooks/01_eda_analisis_exploratorio.ipynb`.
 - El **género sí es muy discriminante**: la popularidad media va de ~2 (`iranian`) a ~59 (`pop-film`).
 - Hay multicolinealidad entre `energy`, `loudness` (r = 0.76) y `acousticness` (r = −0.73).
 - Las relaciones son no lineales, por lo que se esperaba que los modelos basados en árboles superaran a los lineales.
+- **Sesgo de recopilación en géneros latinos:** `latin` tiene mediana de popularidad 0 (59% de ceros) y `reggaeton` mediana 2, aunque Bad Bunny
+  fue el artista más escuchado de Spotify en 2020, 2021, 2022 y 2025 ([Spotify Newsroom](https://newsroom.spotify.com/2025-12-03/wrapped-bad-bunny-top-artist-album/)).
+  Entre los ceros hay éxitos como *Con Calma* o *MIA*, tomados de recopilatorios (*Clásicos de ahora: Perreo*, *Today's Party Hits*).
+  Spotify calcula la popularidad por versión, y para estos géneros el dataset se armó con copias en vez de los originales.
 
 ## 7. Preparación de datos
 
@@ -151,7 +156,7 @@ Implementada en los pipelines `data_cleaning` y `data_transformation`, documenta
 | Valores imposibles (`tempo`, `time_signature` o `duration_ms` = 0) | 163 | Errores de medición |
 | Duplicados por `track_id` | 24.258 | La misma canción en train y test causaría **data leakage** |
 | Duplicados por nombre + artista | 8.385 | Misma canción publicada en varios álbumes (single, álbum, recopilatorio) |
-| `popularity = 0` | 4.754 | Representa ausencia de datos de reproducción, no impopularidad |
+| `popularity = 0` | 4.754 | Artefacto de recopilación: versiones en recopilatorios sin reproducciones propias, no impopularidad real (EDA, sección 8.1) |
 
 **Transformación:**
 
@@ -229,7 +234,7 @@ con las variables disponibles no puede anticipar los éxitos masivos, que depend
 ![Importancia de variables](results/plots/04_feature_importance.png)
 
 - El **género** es, por lejos, la variable más importante: al desordenarlo, el ROC-AUC cae de 0.88 a ~0.56 y el MAE sube 7.2 puntos.
-- Géneros con más probabilidad de hit: pop-film, hip-hop, pop, electro, chill, EDM, house y k-pop.
+- Géneros con más probabilidad de hit: pop-film, hip-hop, pop, electro, chill, EDM, house, metal y k-pop.
 - Con el género fijo, ser **explícita**, una **colaboración** y tener **más volumen** aumentan la probabilidad de hit. Ser **instrumental**,
   **hablada**, **en vivo** o **larga** la reduce.
 
@@ -257,8 +262,8 @@ Para decidir qué promocionar se recomienda el **modelo de clasificación**, por
 
 ## 10. Recomendaciones de negocio
 
-1. **Usar el clasificador para priorizar la promoción:** concentrar el presupuesto en el 10–20% de canciones con mayor probabilidad
-   de hit triplica la tasa de acierto frente a elegir al azar.
+1. **Usar el clasificador para priorizar la promoción:** concentrar el presupuesto en el 10% de canciones con mayor probabilidad
+   de hit multiplica por 3,2 la tasa de acierto frente a elegir al azar (85% vs 26,6%).
 2. **Ajustar el umbral según la estrategia:** con presupuesto acotado (playlists editoriales), umbral alto para priorizar Precision.
    Para descubrimiento amplio, umbral 0.5, que detecta el 81% de los hits.
 3. **Priorizar los segmentos "Bailable y alegre" y "Acústica melódica"**, que suman el 53% del catálogo y tienen la mayor tasa de hits (30%).
@@ -283,9 +288,17 @@ Para decidir qué promocionar se recomienda el **modelo de clasificación**, por
 
 - El dataset tiene exactamente 1.000 canciones por género (muestreo artificial): no representa la distribución real del catálogo de Spotify.
 - Faltan variables decisivas para la popularidad: seguidores del artista, inversión en marketing y fecha de lanzamiento.
-  Esto explica que el R² sea de 0.53.
+  Esto ayuda a explicar que el R² se quede en 0.53.
 - La popularidad es una foto en el tiempo: cambia con las reproducciones recientes.
 - La deduplicación conserva un solo género por canción, aunque algunas canciones pertenecen a varios.
+- **Sesgo en géneros latinos:** la exclusión de `popularity = 0` elimina 265 éxitos latinos sin versión original en el dataset, y `latin`
+  conserva valores de 1–2 con el mismo origen. Como el género es la variable más importante, el modelo subestima la popularidad de la
+  música urbana latina: sus predicciones y recomendaciones para estos géneros no son confiables.
+- El modelo no se evaluó con canciones sin datos de reproducción (`popularity = 0`).
+
+**Mejora futura:** `latin`, `latino`, `reggaeton` y `reggae` comparten la mayoría de sus canciones, artistas y perfil de audio
+(p. ej. 804 de las 1.000 canciones de `reggae` también están en `reggaeton`). Unificarlos en una categoría `latin_urbano` antes de
+deduplicar eliminaría el ruido de etiquetas y daría una lectura más fiel de su potencial comercial.
 
 ## 12. Estructura del proyecto
 
@@ -325,7 +338,7 @@ evaluacion2-machine/
 
 ## 13. Cómo reproducir el proyecto
 
-**Requisitos:** Python 3.10 o superior (probado con Python 3.13, Kedro 1.7.0 y scikit-learn 1.9.1).
+**Requisitos:** Python 3.11 o superior (probado con Python 3.13, Kedro 1.7.0 y scikit-learn 1.9.1).
 
 ```bash
 # 1. Clonar el repositorio
