@@ -1,0 +1,4 @@
+Modelo,Busqueda,Metrica_CV,Inicial,Optimizado,Mejora,Mejora_pct,Modelo_final,Mejores_parametros
+LogisticRegression,GridSearchCV (5 combinaciones),f1,0.643,0.643,0.0,0.0,optimizado,{'C': 100.0}
+RandomForest,RandomizedSearchCV (8 combinaciones),f1,0.6078,0.6213,0.0135,2.22,optimizado,"{'min_samples_leaf': 3, 'max_features': 0.2, 'max_depth': 30}"
+GradientBoosting,RandomizedSearchCV (15 combinaciones),f1,0.6598,0.6708,0.011,1.66,optimizado,"{'min_samples_leaf': 50, 'max_leaf_nodes': 127, 'max_iter': 200, 'learning_rate': 0.05, 'l2_regularization': 1.0}"

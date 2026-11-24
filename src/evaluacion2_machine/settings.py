@@ -32,6 +32,18 @@ https://docs.kedro.org/en/stable/configure/configuration_basics/#configuration""
 # CONFIG_LOADER_CLASS = OmegaConfigLoader
 
 # Keyword arguments to pass to the `CONFIG_LOADER_CLASS` constructor.
+import sys
+
+import matplotlib
+
+# Los pipelines solo guardan gráficos en archivos: se usa el backend "Agg" (sin
+# ventanas). El backend por defecto en Windows (TkAgg) genera avisos
+# "main thread is not in main loop" cuando el recolector de basura libera
+# figuras desde los hilos de joblib (Random Forest con n_jobs=-1).
+# En Jupyter no se cambia, para que los gráficos se sigan mostrando en línea.
+if "ipykernel" not in sys.modules:
+    matplotlib.use("Agg")
+
 CONFIG_LOADER_ARGS = {
     "base_env": "base",
     "default_run_env": "local",

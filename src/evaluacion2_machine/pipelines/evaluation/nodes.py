@@ -10,27 +10,28 @@ from sklearn.metrics import (
     accuracy_score, f1_score, mean_absolute_error, precision_score,
     r2_score, recall_score, roc_auc_score, roc_curve, root_mean_squared_error,
 )
-from sklearn.model_selection import KFold, StratifiedKFold, cross_validate
+from sklearn.model_selection import KFold, StratifiedKFold, cross_validate, learning_curve
 
 logger = logging.getLogger(__name__)
 
-CLF_NAMES = ["Baseline", "LogisticRegression", "RandomForest", "GradientBoosting"]
-REG_NAMES = ["Baseline", "Ridge", "RandomForest", "GradientBoosting"]
+CLF_NAMES = ["Baseline", "LogisticRegression", "RandomForest", "GradientBoosting", "Voting", "Stacking"]
+REG_NAMES = ["Baseline", "Ridge", "RandomForest", "GradientBoosting", "Voting", "Stacking"]
 COLORS = {"Baseline": "#95A5A6", "LogisticRegression": "#3498DB", "Ridge": "#3498DB",
-          "RandomForest": "#E67E22", "GradientBoosting": "#1DB954"}
+          "RandomForest": "#E67E22", "GradientBoosting": "#1DB954",
+          "Voting": "#9B59B6", "Stacking": "#2C3E50"}
 
 
 # ─────────────────────────────────────────────
 # Clasificación
 # ─────────────────────────────────────────────
 
-def evaluate_classifiers(X_test, y_test_clf, baseline, log_reg, rf, gb) -> tuple:
+def evaluate_classifiers(X_test, y_test_clf, baseline, log_reg, rf, gb, voting, stacking) -> tuple:
     # F1 es la métrica principal: combina Precision (de las canciones que el
     # modelo marca como hit, cuántas lo son) y Recall (de los hits reales,
     # cuántos detecta). ROC-AUC mide la capacidad de ordenar canciones por
     # probabilidad de hit, independiente del umbral de decisión.
     y = y_test_clf.squeeze()
-    models = dict(zip(CLF_NAMES, [baseline, log_reg, rf, gb]))
+    models = dict(zip(CLF_NAMES, [baseline, log_reg, rf, gb, voting, stacking]))
 
     rows = []
     for name, model in models.items():
@@ -47,8 +48,8 @@ def evaluate_classifiers(X_test, y_test_clf, baseline, log_reg, rf, gb) -> tuple
     metrics = pd.DataFrame(rows).round(4)
     logger.info("Métricas clasificación (test):\n%s", metrics.to_string(index=False))
 
-    fig_cm, axes = plt.subplots(1, 4, figsize=(20, 4.5))
-    for ax, (name, model) in zip(axes, models.items()):
+    fig_cm, axes = plt.subplots(2, 3, figsize=(18, 10))
+    for ax, (name, model) in zip(axes.ravel(), models.items()):
         ConfusionMatrixDisplay.from_estimator(
             model, X_test, y, ax=ax, cmap="Greens", colorbar=False,
             display_labels=["No hit", "Hit"], values_format=",",
@@ -75,7 +76,7 @@ def evaluate_classifiers(X_test, y_test_clf, baseline, log_reg, rf, gb) -> tuple
     return metrics, fig_cm, fig_roc
 
 
-def cross_validate_classifiers(X_train, y_train_clf, params, log_reg, rf, gb) -> pd.DataFrame:
+def cross_validate_classifiers(X_train, y_train_clf, params, log_reg, rf, gb, voting, stacking) -> pd.DataFrame:
     # Validación cruzada estratificada sobre train: confirma que el desempeño
     # en test no depende de un split afortunado. Una std baja entre folds
     # indica un modelo estable. Se usa clone() para reentrenar desde cero con
@@ -85,7 +86,7 @@ def cross_validate_classifiers(X_train, y_train_clf, params, log_reg, rf, gb) ->
     scoring = ["f1", "recall", "precision", "roc_auc"]
 
     rows = []
-    for name, model in zip(CLF_NAMES[1:], [log_reg, rf, gb]):
+    for name, model in zip(CLF_NAMES[1:], [log_reg, rf, gb, voting, stacking]):
         scores = cross_validate(clone(model), X_train, y, cv=cv, scoring=scoring)
         row = {"Modelo": name}
         for s in scoring:
@@ -100,12 +101,12 @@ def cross_validate_classifiers(X_train, y_train_clf, params, log_reg, rf, gb) ->
 # Regresión
 # ─────────────────────────────────────────────
 
-def evaluate_regressors(X_test, y_test_reg, baseline, ridge, rf, gb) -> tuple:
+def evaluate_regressors(X_test, y_test_reg, baseline, ridge, rf, gb, voting, stacking) -> tuple:
     # MAE: error promedio en puntos de popularidad (métrica principal, la más
     # fácil de explicar al negocio). RMSE penaliza más los errores grandes.
     # R²: proporción de la variabilidad de popularity que explica el modelo.
     y = y_test_reg.squeeze()
-    models = dict(zip(REG_NAMES, [baseline, ridge, rf, gb]))
+    models = dict(zip(REG_NAMES, [baseline, ridge, rf, gb, voting, stacking]))
 
     rows, preds = [], {}
     for name, model in models.items():
@@ -122,7 +123,9 @@ def evaluate_regressors(X_test, y_test_reg, baseline, ridge, rf, gb) -> tuple:
 
     rng = np.random.default_rng(0)
     idx = rng.choice(len(y), size=min(3000, len(y)), replace=False)
-    fig, axes = plt.subplots(1, 3, figsize=(18, 5.5))
+    fig, axes = plt.subplots(2, 3, figsize=(18, 11))
+    axes = axes.ravel()
+    axes[-1].axis("off")
     for ax, name in zip(axes, REG_NAMES[1:]):
         ax.scatter(y.iloc[idx], preds[name][idx], s=6, alpha=0.3, color=COLORS[name])
         ax.plot([0, 100], [0, 100], "r--", lw=1)
@@ -139,13 +142,13 @@ def evaluate_regressors(X_test, y_test_reg, baseline, ridge, rf, gb) -> tuple:
     return metrics, fig
 
 
-def cross_validate_regressors(X_train, y_train_reg, params, ridge, rf, gb) -> pd.DataFrame:
+def cross_validate_regressors(X_train, y_train_reg, params, ridge, rf, gb, voting, stacking) -> pd.DataFrame:
     y = y_train_reg.squeeze()
     cv = KFold(n_splits=params["cv_folds"], shuffle=True, random_state=params["random_state"])
     scoring = {"MAE": "neg_mean_absolute_error", "RMSE": "neg_root_mean_squared_error", "R2": "r2"}
 
     rows = []
-    for name, model in zip(REG_NAMES[1:], [ridge, rf, gb]):
+    for name, model in zip(REG_NAMES[1:], [ridge, rf, gb, voting, stacking]):
         scores = cross_validate(clone(model), X_train, y, cv=cv, scoring=scoring)
         row = {"Modelo": name}
         for s in scoring:
@@ -160,12 +163,12 @@ def cross_validate_regressors(X_train, y_train_reg, params, ridge, rf, gb) -> pd
 
 def plot_metrics_comparison(clf_metrics: pd.DataFrame, reg_metrics: pd.DataFrame) -> plt.Figure:
     fig, axes = plt.subplots(1, 2, figsize=(18, 5))
-    clf_metrics.set_index("Modelo")[["Precision", "Recall", "F1", "ROC_AUC"]].plot.bar(ax=axes[0], rot=0)
+    clf_metrics.set_index("Modelo")[["Precision", "Recall", "F1", "ROC_AUC"]].plot.bar(ax=axes[0], rot=15)
     axes[0].set_title("Clasificación (is_hit) — métricas en test")
     axes[0].set_ylim(0, 1)
     axes[0].legend(loc="upper left")
 
-    reg_metrics.set_index("Modelo")[["MAE", "RMSE"]].plot.bar(ax=axes[1], rot=0, color=["#1DB954", "#E67E22"])
+    reg_metrics.set_index("Modelo")[["MAE", "RMSE"]].plot.bar(ax=axes[1], rot=15, color=["#1DB954", "#E67E22"])
     axes[1].set_title("Regresión (popularity) — error en test (menor es mejor)")
     for container in axes[1].containers:
         axes[1].bar_label(container, fmt="%.1f")
@@ -252,3 +255,137 @@ def logistic_coefficients(log_reg, X_test) -> tuple:
     plt.close(fig)
 
     return coefs.sort_values("Coeficiente", ascending=False).round(4), fig
+
+
+# ─────────────────────────────────────────────
+# Capacidad de generalización
+# ─────────────────────────────────────────────
+#
+# Un modelo generaliza bien si su desempeño con datos que NO vio (validación
+# cruzada y test) es parecido al que obtiene con los datos de entrenamiento.
+# Se comparan tres mediciones por modelo:
+#   - Train: datos con los que se entrenó (optimista por definición).
+#   - CV:    promedio de 5 folds sobre train, cada fold evaluado sin haberlo visto.
+#   - Test:  20% reservado desde el inicio, nunca usado para entrenar ni ajustar.
+# Brecha train → test grande = sobreajuste (memoriza en vez de aprender).
+# CV ≈ test = la estimación es confiable y no depende de un split afortunado.
+
+def _diagnosis(rel_gap: float) -> str:
+    if rel_gap < 0.10:
+        return "generaliza bien"
+    if rel_gap < 0.25:
+        return "sobreajuste leve"
+    return "sobreajuste"
+
+
+def generalization_classifiers(X_train, y_train_clf, clf_test_metrics, cv_clf_results,
+                               log_reg, rf, gb, voting, stacking) -> pd.DataFrame:
+    y = y_train_clf.squeeze()
+    test = clf_test_metrics.set_index("Modelo")
+    cv = cv_clf_results.set_index("Modelo")
+
+    rows = []
+    for name, model in zip(CLF_NAMES[1:], [log_reg, rf, gb, voting, stacking]):
+        f1_train = f1_score(y, model.predict(X_train))
+        auc_train = roc_auc_score(y, model.predict_proba(X_train)[:, 1])
+        f1_test = test.loc[name, "F1"]
+        rel_gap = (f1_train - f1_test) / f1_train
+        rows.append({
+            "Modelo": name,
+            "F1_train": f1_train, "F1_cv": cv.loc[name, "f1_mean"], "F1_test": f1_test,
+            "Brecha_F1": f1_train - f1_test,
+            "ROC_AUC_train": auc_train, "ROC_AUC_cv": cv.loc[name, "roc_auc_mean"],
+            "ROC_AUC_test": test.loc[name, "ROC_AUC"],
+            "Diagnostico": _diagnosis(rel_gap),
+        })
+    result = pd.DataFrame(rows).round(4)
+    logger.info("Generalización (clasificación):\n%s", result.to_string(index=False))
+    return result
+
+
+def generalization_regressors(X_train, y_train_reg, reg_test_metrics, cv_reg_results,
+                              ridge, rf, gb, voting, stacking) -> pd.DataFrame:
+    y = y_train_reg.squeeze()
+    test = reg_test_metrics.set_index("Modelo")
+    cv = cv_reg_results.set_index("Modelo")
+
+    rows = []
+    for name, model in zip(REG_NAMES[1:], [ridge, rf, gb, voting, stacking]):
+        pred = model.predict(X_train)
+        mae_train = mean_absolute_error(y, pred)
+        mae_test = test.loc[name, "MAE"]
+        rel_gap = (mae_test - mae_train) / mae_test
+        rows.append({
+            "Modelo": name,
+            "MAE_train": mae_train, "MAE_cv": cv.loc[name, "MAE_mean"], "MAE_test": mae_test,
+            "Brecha_MAE": mae_test - mae_train,
+            "R2_train": r2_score(y, pred), "R2_cv": cv.loc[name, "R2_mean"], "R2_test": test.loc[name, "R2"],
+            "Diagnostico": _diagnosis(rel_gap),
+        })
+    result = pd.DataFrame(rows).round(4)
+    logger.info("Generalización (regresión):\n%s", result.to_string(index=False))
+    return result
+
+
+def plot_generalization(gen_clf: pd.DataFrame, gen_reg: pd.DataFrame) -> plt.Figure:
+    fig, axes = plt.subplots(1, 2, figsize=(18, 5.5))
+    palette = ["#BDC3C7", "#3498DB", "#1DB954"]
+
+    gen_clf.set_index("Modelo")[["F1_train", "F1_cv", "F1_test"]].plot.bar(ax=axes[0], rot=15, color=palette)
+    axes[0].set_title("Clasificación — F1 en train, validación cruzada y test (mayor es mejor)")
+    axes[0].set_ylim(0, 1)
+    axes[0].legend(["Train", "CV (5 folds)", "Test"], loc="lower right")
+
+    gen_reg.set_index("Modelo")[["MAE_train", "MAE_cv", "MAE_test"]].plot.bar(ax=axes[1], rot=15, color=palette)
+    axes[1].set_title("Regresión — MAE en train, validación cruzada y test (menor es mejor)")
+    axes[1].legend(["Train", "CV (5 folds)", "Test"], loc="lower right")
+    for container in axes[1].containers:
+        axes[1].bar_label(container, fmt="%.1f", fontsize=8)
+
+    fig.suptitle("Capacidad de generalización: una brecha pequeña entre train y test indica que el modelo no memoriza")
+    fig.tight_layout()
+    plt.close(fig)
+    return fig
+
+
+def learning_curves(X_train, y_train_clf, y_train_reg, gb_clf, gb_reg, params) -> tuple:
+    # Curva de aprendizaje del modelo base del ensamble (Gradient Boosting):
+    # entrena con porciones crecientes de train y mide el score en validación.
+    # - Si train y validación convergen → el modelo no sobreajusta.
+    # - Si la validación sigue subiendo al final → más datos ayudarían.
+    # - Si ambas se estancan bajas → falta información (variables), no datos.
+    lc, rs = params["learning_curve"], params["random_state"]
+    sizes = np.array(lc["train_sizes"])
+
+    rows = []
+    fig, axes = plt.subplots(1, 2, figsize=(16, 5.5))
+    tasks = [
+        ("clasificacion", gb_clf, y_train_clf, "f1", "F1",
+         StratifiedKFold(n_splits=lc["cv_folds"], shuffle=True, random_state=rs), 1),
+        ("regresion", gb_reg, y_train_reg, "neg_mean_absolute_error", "MAE",
+         KFold(n_splits=lc["cv_folds"], shuffle=True, random_state=rs), -1),
+    ]
+    for ax, (task, model, y, scoring, label, cv, sign) in zip(axes, tasks):
+        n, train_sc, val_sc = learning_curve(clone(model), X_train, y.squeeze(), train_sizes=sizes,
+                                             cv=cv, scoring=scoring, n_jobs=1)
+        train_sc, val_sc = sign * train_sc, sign * val_sc
+        for i, size in enumerate(n):
+            rows.append({"Tarea": task, "Metrica": label, "n_train": int(size),
+                         "train_mean": train_sc[i].mean(), "train_std": train_sc[i].std(),
+                         "val_mean": val_sc[i].mean(), "val_std": val_sc[i].std()})
+        for scores, color, name in [(train_sc, "#BDC3C7", "Train"), (val_sc, "#1DB954", "Validación")]:
+            ax.plot(n, scores.mean(axis=1), "o-", color=color, label=name)
+            ax.fill_between(n, scores.mean(axis=1) - scores.std(axis=1),
+                            scores.mean(axis=1) + scores.std(axis=1), color=color, alpha=0.2)
+        ax.set_xlabel("Canciones de entrenamiento")
+        ax.set_ylabel(label)
+        titles = {"clasificacion": "Clasificación (F1, mayor es mejor)", "regresion": "Regresión (MAE, menor es mejor)"}
+        ax.set_title(f"{titles[task]} — Gradient Boosting")
+        ax.legend()
+
+    fig.suptitle("Curvas de aprendizaje (validación cruzada de 3 folds)")
+    fig.tight_layout()
+    plt.close(fig)
+    result = pd.DataFrame(rows).round(4)
+    logger.info("Curvas de aprendizaje:\n%s", result.to_string(index=False))
+    return result, fig

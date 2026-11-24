@@ -119,6 +119,9 @@ random_forest_clf:
   type: pickle.PickleDataset
   filepath: models/trained_models/random_forest_clf.joblib
   backend: joblib
+  # Comprimido: sin compresión supera el límite de 100 MB por archivo de GitHub
+  save_args:
+    compress: 3
 
 gradient_boosting_clf:
   type: pickle.PickleDataset
@@ -139,11 +142,47 @@ random_forest_reg:
   type: pickle.PickleDataset
   filepath: models/trained_models/random_forest_reg.joblib
   backend: joblib
+  # Comprimido: sin compresión supera el límite de 100 MB por archivo de GitHub
+  save_args:
+    compress: 3
 
 gradient_boosting_reg:
   type: pickle.PickleDataset
   filepath: models/trained_models/gradient_boosting_reg.joblib
   backend: joblib
+
+# Ensambles (pipeline ensembles)
+voting_clf:
+  type: pickle.PickleDataset
+  filepath: models/trained_models/voting_clf.joblib
+  backend: joblib
+  # Comprimido: sin compresión supera el límite de 100 MB por archivo de GitHub
+  save_args:
+    compress: 3
+
+stacking_clf:
+  type: pickle.PickleDataset
+  filepath: models/trained_models/stacking_clf.joblib
+  backend: joblib
+  # Comprimido: sin compresión supera el límite de 100 MB por archivo de GitHub
+  save_args:
+    compress: 3
+
+voting_reg:
+  type: pickle.PickleDataset
+  filepath: models/trained_models/voting_reg.joblib
+  backend: joblib
+  # Comprimido: sin compresión supera el límite de 100 MB por archivo de GitHub
+  save_args:
+    compress: 3
+
+stacking_reg:
+  type: pickle.PickleDataset
+  filepath: models/trained_models/stacking_reg.joblib
+  backend: joblib
+  # Comprimido: sin compresión supera el límite de 100 MB por archivo de GitHub
+  save_args:
+    compress: 3
 
 kmeans_model:
   type: pickle.PickleDataset
@@ -161,6 +200,38 @@ hyperparameter_results_clf:
 hyperparameter_results_reg:
   type: pandas.CSVDataset
   filepath: results/metrics/hyperparameter_results_reg.csv
+
+tuning_summary_clf:
+  type: pandas.CSVDataset
+  filepath: results/metrics/tuning_summary_clf.csv
+  fs_args:
+    open_args_save:
+      mode: w
+      encoding: utf-8
+
+tuning_summary_reg:
+  type: pandas.CSVDataset
+  filepath: results/metrics/tuning_summary_reg.csv
+  fs_args:
+    open_args_save:
+      mode: w
+      encoding: utf-8
+
+stacking_weights:
+  type: pandas.CSVDataset
+  filepath: results/metrics/stacking_weights.csv
+
+generalization_clf:
+  type: pandas.CSVDataset
+  filepath: results/metrics/generalization_clf.csv
+
+generalization_reg:
+  type: pandas.CSVDataset
+  filepath: results/metrics/generalization_reg.csv
+
+learning_curve_results:
+  type: pandas.CSVDataset
+  filepath: results/metrics/learning_curve_results.csv
 
 clf_test_metrics:
   type: pandas.CSVDataset
@@ -273,6 +344,20 @@ plot_pca_clusters:
 plot_cluster_profiles:
   type: matplotlib.MatplotlibDataset
   filepath: results/plots/05_cluster_profiles.png
+  save_args:
+    dpi: 100
+    bbox_inches: tight
+
+plot_generalization:
+  type: matplotlib.MatplotlibDataset
+  filepath: results/plots/06_generalization.png
+  save_args:
+    dpi: 100
+    bbox_inches: tight
+
+plot_learning_curves:
+  type: matplotlib.MatplotlibDataset
+  filepath: results/plots/06_learning_curves.png
   save_args:
     dpi: 100
     bbox_inches: tight

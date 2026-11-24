@@ -1,0 +1,7 @@
+Tarea,Modelo_base,Peso_meta_modelo
+clasificacion,lineal,0.6478
+clasificacion,random_forest,1.2878
+clasificacion,gradient_boosting,4.3652
+regresion,lineal,0.2459
+regresion,random_forest,0.0469
+regresion,gradient_boosting,0.7425

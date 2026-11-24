@@ -82,7 +82,7 @@ modeling:
   # ── Clasificadores ──
   clf_logistic_regression:
     C: 1.0
-    penalty: l2
+    l1_ratio: 0         # penalización L2 (sklearn >= 1.8 reemplaza penalty='l2' por l1_ratio=0)
     solver: lbfgs
     max_iter: 3000
     class_weight: balanced
@@ -105,18 +105,47 @@ modeling:
     min_samples_leaf: 5
     max_features: 0.3
 
-  # ── Optimización de hiperparámetros (HistGradientBoosting) ──
+  # ── Optimización de hiperparámetros (pipeline hyperparameter_tuning) ──
+  # Los valores de arriba son la configuración INICIAL (EP2, elegida a mano).
+  # Cada modelo se re-ajusta con búsqueda + validación cruzada y se compara
+  # contra esa configuración inicial (results/metrics/tuning_summary_*.csv).
   tuning:
-    n_iter: 15
+    n_iter: 15          # combinaciones de RandomizedSearchCV para HGB
+    rf_n_iter: 8        # Random Forest es ~3x más lento por ajuste
     cv_folds: 3
     scoring_clf: f1
     scoring_reg: neg_mean_absolute_error
+    # GridSearchCV (espacio chico, se prueba completo)
+    logreg_param_grid:
+      C: [0.01, 0.1, 1.0, 10.0, 100.0]
+    ridge_param_grid:
+      alpha: [0.01, 0.1, 1.0, 10.0, 100.0, 300.0]
+    # RandomizedSearchCV (espacio grande, se muestrea)
+    rf_clf_param_distributions:
+      max_depth: [15, 20, 30]
+      min_samples_leaf: [3, 5, 10]
+      max_features: [sqrt, 0.2, 0.3]
+    rf_reg_param_distributions:
+      max_depth: [15, 20, 30]
+      min_samples_leaf: [3, 5, 10]
+      max_features: [0.2, 0.3, 0.5]
     hgb_param_distributions:
       learning_rate: [0.03, 0.05, 0.1, 0.2]
       max_iter: [200, 400, 800]
       max_leaf_nodes: [15, 31, 63, 127]
       min_samples_leaf: [20, 50, 100]
       l2_regularization: [0.0, 0.1, 1.0]
+
+  # ── Técnicas de ensamble (pipeline ensembles) ──
+  # Combinan los 3 modelos optimizados: lineal + bagging (RF) + boosting (HGB)
+  ensembles:
+    voting: soft          # promedia probabilidades (clasificación)
+    stacking_cv: 3        # folds internos para generar las predicciones out-of-fold
+
+  # ── Generalización (pipeline evaluation) ──
+  learning_curve:
+    train_sizes: [0.1, 0.25, 0.5, 0.75, 1.0]
+    cv_folds: 3
 
 # ─────────────────────────────────────────────
 # Parámetros — pipeline unsupervised

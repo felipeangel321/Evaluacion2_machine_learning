@@ -1,0 +1,4 @@
+Modelo,Busqueda,Metrica_CV,Inicial,Optimizado,Mejora,Mejora_pct,Modelo_final,Mejores_parametros
+Ridge,GridSearchCV (6 combinaciones),MAE,9.2845,9.2783,0.0061,0.07,optimizado,{'alpha': 0.01}
+RandomForest,RandomizedSearchCV (8 combinaciones),MAE,10.8409,9.9989,0.842,7.77,optimizado,"{'min_samples_leaf': 3, 'max_features': 0.3, 'max_depth': 30}"
+GradientBoosting,RandomizedSearchCV (15 combinaciones),MAE,9.1499,8.8999,0.25,2.73,optimizado,"{'min_samples_leaf': 50, 'max_leaf_nodes': 127, 'max_iter': 800, 'learning_rate': 0.05, 'l2_regularization': 0.0}"

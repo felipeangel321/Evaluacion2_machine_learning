@@ -1,0 +1,6 @@
+Modelo,MAE_train,MAE_cv,MAE_test,Brecha_MAE,R2_train,R2_cv,R2_test,Diagnostico
+Ridge,9.2536,9.2761,9.1228,-0.1308,0.4976,0.4946,0.5026,generaliza bien
+RandomForest,8.7638,9.9703,9.8225,1.0587,0.5504,0.4507,0.4572,sobreajuste leve
+GradientBoosting,7.931,8.8514,8.6539,0.7229,0.6175,0.5228,0.5349,generaliza bien
+Voting,8.4632,9.1801,8.9998,0.5366,0.5816,0.513,0.5223,generaliza bien
+Stacking,8.0797,8.8316,8.6285,0.5488,0.6015,0.5243,0.5363,generaliza bien

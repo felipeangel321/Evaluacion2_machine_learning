@@ -1,0 +1,11 @@
+Tarea,Metrica,n_train,train_mean,train_std,val_mean,val_std
+clasificacion,F1,4076,0.9659,0.004,0.4623,0.0107
+clasificacion,F1,10191,0.8216,0.0099,0.6297,0.0056
+clasificacion,F1,20383,0.7863,0.0038,0.6585,0.0015
+clasificacion,F1,30575,0.7604,0.0162,0.6651,0.0024
+clasificacion,F1,40767,0.744,0.0014,0.6698,0.0027
+regresion,MAE,4076,1.7241,0.0463,12.8612,0.3141
+regresion,MAE,10191,7.7754,0.1567,10.0527,0.1136
+regresion,MAE,20383,7.701,0.1618,9.2281,0.0053
+regresion,MAE,30575,7.6586,0.0272,9.008,0.0321
+regresion,MAE,40767,7.7006,0.1859,8.894,0.0309
