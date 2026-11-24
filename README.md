@@ -32,6 +32,7 @@ y sus características de audio. El proyecto está organizado como un pipeline *
 14. [Conclusiones, limitaciones y recomendaciones](#14-conclusiones-limitaciones-y-recomendaciones)
 15. [Estructura del proyecto](#15-estructura-del-proyecto)
 16. [Cómo reproducir el proyecto](#16-cómo-reproducir-el-proyecto)
+17. [Aplicación demo (Streamlit)](#17-aplicación-demo-streamlit)
 
 ---
 
@@ -158,7 +159,7 @@ se discute como limitación en la sección 14.
 | **3. Preparación de los datos** | Limpieza, deduplicación, feature engineering, encoding, split y escalado | Pipelines `data_cleaning` y `data_transformation` · `notebooks/02_limpieza_transformacion.ipynb` |
 | **4. Modelado** | 3 clasificadores y 3 regresores (+ baselines), optimización de hiperparámetros de todos ellos, ensambles Voting y Stacking, K-Means, PCA y DBSCAN | Pipelines `modeling`, `hyperparameter_tuning`, `ensembles`, `unsupervised` · notebooks 03–06 |
 | **5. Evaluación** | Métricas en test, validación cruzada de 5 folds, generalización (train vs CV vs test, curvas de aprendizaje), importancia de variables, lift, sesgo por género y selección del modelo final | Pipeline `evaluation` · notebooks 03, 04, 05 y 06 |
-| **6. Despliegue** | Proyecto Kedro reproducible con un solo comando (o desde `notebooks/00_reproducir_proyecto.ipynb`), modelos serializados (`.joblib`) e informe técnico | `kedro run` · `models/` · `results/` |
+| **6. Despliegue** | Proyecto Kedro reproducible con un solo comando (o desde `notebooks/00_reproducir_proyecto.ipynb`), modelos serializados (`.joblib`), aplicación demo que usa los modelos para decidir qué promocionar, e informe técnico | `kedro run` · `models/` · `app/` · `results/` |
 
 El proceso fue **iterativo**, como plantea CRISP-DM: el EDA obligó a volver a la preparación (deduplicar por nombre + artista,
 excluir `popularity = 0`), y la evaluación de la EP2 llevó a volver al modelado (optimizar todos los modelos, agregar ensambles
@@ -502,6 +503,9 @@ de `reggae` también están en `reggaeton`) y reconstruirla con las versiones or
 
 ```
 evaluacion2-machine/
+├── app/
+│   ├── app.py                   # Aplicación demo (Streamlit): simulador, lista de promoción y segmentos
+│   └── core.py                  # Carga de modelos y misma transformación que el pipeline
 ├── conf/base/
 │   ├── catalog.yml              # Datasets, modelos, métricas y gráficos (Kedro Data Catalog)
 │   └── parameters.yml           # Todas las decisiones de limpieza, features y modelos
@@ -576,7 +580,7 @@ kedro jupyter lab
 `00_reproducir_proyecto.ipynb` ejecuta todo el pipeline desde el notebook (equivale a `kedro run`). Luego, los notebooks
 01 → 06 explican cada etapa; los notebooks 03 a 06 cargan los modelos y resultados generados por el pipeline.
 
-**Tests** (14 tests: preparación de datos, optimización, ensambles y diagnóstico de generalización):
+**Tests** (17 tests: preparación de datos, optimización, ensambles, diagnóstico de generalización y aplicación demo):
 
 ```bash
 pytest
@@ -588,3 +592,26 @@ pytest
 pip install kedro-viz
 kedro viz
 ```
+
+## 17. Aplicación demo (Streamlit)
+
+La aplicación pone a trabajar los **modelos finales** (Gradient Boosting de clasificación y de regresión, y K-Means k = 6)
+para el usuario de negocio. **No reentrena nada**: carga los `.joblib` de `models/trained_models/` y el escalador
+`data/06_models/scaler.pkl`, y aplica a cada canción exactamente la misma transformación que el pipeline
+`data_transformation` (variables nuevas, One-Hot de género/tonalidad/compás y escalado con el scaler ajustado en train).
+
+```bash
+# Requiere haber ejecutado `kedro run` (genera los modelos y los datos procesados)
+streamlit run app/app.py
+```
+
+| Pestaña | Qué responde | Modelo |
+|---|---|---|
+| **Simulador de canción** | ¿Será un hit esta canción y qué popularidad tendrá? Se parte de una canción real del conjunto de test (que el modelo nunca vio) o de una nueva, y se modifican sus variables para ver el efecto. Muestra el segmento de sonido y advierte cuando el género tiene sesgo medido (latino urbano). | GB clasificación + GB regresión + K-Means |
+| **Qué promocionar** | Con un presupuesto de X% del catálogo, ¿qué canciones promocionar y cuántas serán hits? Ordena el conjunto de test por probabilidad de hit, compara contra elegir al azar (lift) y permite descargar la lista en CSV. | GB clasificación |
+| **Segmentos** | ¿Qué tipos de música tienen más potencial? Tasa de hits, popularidad media, géneros típicos y recomendación de cada uno de los 6 segmentos, con su perfil de sonido. | K-Means |
+| **Cómo funciona** | Flujo datos → Kedro → modelos → app, y límites de uso responsable. | — |
+
+Sobre el conjunto de test la aplicación reproduce las métricas de este informe (F1 0.680, ROC-AUC 0.884, MAE 8.65 y
+85% de hits al promocionar el top 10%), lo que verifica que la transformación es la misma del pipeline
+(`tests/test_app.py`).
